@@ -1,6 +1,6 @@
 This repo contains GAP:
 
-gap-system.org
+https://gap-system.org
 
 code for computing the number of ai-semirings of a given order n, for some
 (very) small values of n. The implemented algorithm is not sophisticated,
@@ -8,7 +8,9 @@ and relies on using the Smallsemi package for GAP:
 
 https://github.com/gap-packages/smallsemi
 
-To compute the number do the following:
+You can run `gap -q testall.g` to check that everything is working ok.
+
+To use this code:
 
 1. Start GAP in the usual way;
 2. Read the file `ai-semiring.g` in GAP:
