@@ -3,3 +3,4 @@
 *.pdf
 *.synctex.gz
 .DS_Store
+annotate.g
