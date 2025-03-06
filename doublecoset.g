@@ -86,6 +86,7 @@ EquivalenceFilter := function(S1, S2)
   return false;
 end;
 
+# reduce whole orbit to one representative
 CanonicalTwist := function(M, autA)
   local sigma, twistList;
   twistList := [];
@@ -146,30 +147,6 @@ Finder := function(allA, allM)
     UniteSet(list, temp);
   od;
     PrintFormatted("\nFound {} candidates!\n", Length(list));
-
-  # result := [];
-
-  # Print("Filtering up to isomorphism or equivalence!\n");
-  # # Filter up to isomorphism
-  # for i in [1 .. Length(list) - 1] do
-  #   PrintFormatted("At {} of {}\c\r", i, Length(list));
-  #   ok := true;
-  #   for j in [i + 1 .. Length(list)] do
-  #     if IsomorphismFilter(list[i], list[j]) then
-  #       ok := false;
-  #       break;
-  #       # TODO check equivalence
-  #     fi;
-  #   od;
-  #   if ok then
-  #     Add(result, list[i]);
-  #   fi;
-  # od;
-
-  # PrintFormatted("\n", i, Length(list) - 1);
-
-  # Add(result, list[Length(list)]);
-
   return list;
 end;
 
