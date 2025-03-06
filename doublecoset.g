@@ -85,6 +85,7 @@ EquivalenceFilter := function(S1, S2)
   fi;
   return false;
 end;
+
 CanonicalTwist := function(M, autA)
   local sigma, twistList;
   twistList := [];
@@ -115,7 +116,7 @@ Finder := function(allA, allM)
 
     j             := 0;
     temp          := [];
-    canonicalList := [];
+    canonicalList := HashSet([]);
 
     for M in allM do
       j    := j + 1;
@@ -126,21 +127,17 @@ Finder := function(allA, allM)
       autM := autMs[j];
       M    := MultiplicationTable(M);
 
-      canon := CanonicalTwist(M, autA);
-
-      if canon in canonicalList then
-        continue;
-      else
-        Add(canonicalList, canon);
-      fi;
-
       # Compute double coset reps: Aut(A)\S_n/Aut(M)
-      reps := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)), autM, autA);
+      reps  := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)), autM, autA);
 
       for sigma in reps do
         M_sigma := OnMultiplicationTable(M, sigma[1]);
         if IsLeftRightDistributive(AA, M_sigma) then
-          AddSet(temp, M_sigma);
+          canon := CanonicalTwist(M_sigma, autA);
+          if (canon in canonicalList) = false then
+            AddSet(canonicalList, canon);
+            AddSet(temp, M_sigma);
+          fi;
         fi;
       od;
     od;
@@ -150,30 +147,30 @@ Finder := function(allA, allM)
   od;
     PrintFormatted("\nFound {} candidates!\n", Length(list));
 
-  result := [];
+  # result := [];
 
-  Print("Filtering up to isomorphism or equivalence!\n");
-  # Filter up to isomorphism
-  for i in [1 .. Length(list) - 1] do
-    PrintFormatted("At {} of {}\c\r", i, Length(list));
-    ok := true;
-    for j in [i + 1 .. Length(list)] do
-      if IsomorphismFilter(list[i], list[j]) then
-        ok := false;
-        break;
-        # TODO check equivalence
-      fi;
-    od;
-    if ok then
-      Add(result, list[i]);
-    fi;
-  od;
+  # Print("Filtering up to isomorphism or equivalence!\n");
+  # # Filter up to isomorphism
+  # for i in [1 .. Length(list) - 1] do
+  #   PrintFormatted("At {} of {}\c\r", i, Length(list));
+  #   ok := true;
+  #   for j in [i + 1 .. Length(list)] do
+  #     if IsomorphismFilter(list[i], list[j]) then
+  #       ok := false;
+  #       break;
+  #       # TODO check equivalence
+  #     fi;
+  #   od;
+  #   if ok then
+  #     Add(result, list[i]);
+  #   fi;
+  # od;
 
-  PrintFormatted("\n", i, Length(list) - 1);
+  # PrintFormatted("\n", i, Length(list) - 1);
 
-  Add(result, list[Length(list)]);
+  # Add(result, list[Length(list)]);
 
-  return result;
+  return list;
 end;
 
 AllAiSemirings := function(n)
