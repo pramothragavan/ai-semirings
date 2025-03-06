@@ -94,8 +94,7 @@ CanonicalTwist := function(M, autA)
     Add(twistList, OnMultiplicationTable(M, sigma));
   od;
 
-  Sort(twistList, function(a, b) return a < b; end);
-  return twistList[1];
+  return Minimum(twistList);
 end;
 
 # Function to enumerate ai-semirings using double cosets
