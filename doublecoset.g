@@ -102,7 +102,7 @@ end;
 
 # Function to enumerate ai-semirings using double cosets
 Finder := function(allA, allM)
-  local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i, result, ok,
+  local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
   autMs, temp, canon, canonicalList;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
