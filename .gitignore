@@ -1,6 +1,7 @@
 *.fdb_latexmk
 *.fls
 *.pdf
+!table.pdf
 *.synctex.gz
 .DS_Store
 annotate.g
