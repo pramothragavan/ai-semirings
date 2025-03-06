@@ -88,13 +88,16 @@ end;
 
 # reduce whole orbit to one representative
 CanonicalTwist := function(M, autA)
-  local sigma, twistList;
-  twistList := [];
+  local sigma, min, temp;
+  min := M;
   for sigma in autA do
-    Add(twistList, OnMultiplicationTable(M, sigma));
+    temp := OnMultiplicationTable(M, sigma);
+    if temp < min then
+      min := temp;
+    fi;
   od;
 
-  return Minimum(twistList);
+  return min;
 end;
 
 # Function to enumerate ai-semirings using double cosets
