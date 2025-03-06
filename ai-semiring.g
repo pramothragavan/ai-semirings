@@ -1,8 +1,8 @@
 
 # Function checking whether a pair of semigroups defines an ai-semiring:
 
-LoadPackage("smallsemi");
 LoadPackage("semigroups");
+LoadPackage("smallsemi");
 
 # A = the additive semigroup, M the multiplicative
 IsLeftRightDistributive := function(S, T)
@@ -96,7 +96,7 @@ Finder := function(allA, allM)
     j := 0;
     for M in allM do
       j := j + 1;
-      PrintFormatted("At {}%, found {} so far\n",
+      PrintFormatted("At {}%, found {} so far\c\r",
                      Float((i * Length(allM) + j) * 100 /
                      (Length(allA) * Length(allM))),
                      Length(list));
