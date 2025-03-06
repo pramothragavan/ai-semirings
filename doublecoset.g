@@ -44,6 +44,15 @@ IsLeftRightDistributive := function(S, T)
   return ok;
 end;
 
+PrecomputeAutM := function(allM)
+  local autMs, M;
+  autMs := [];
+  for M in allM do
+    Add(autMs, Image(IsomorphismPermGroup(AutomorphismGroup(M))));
+  od;
+  return autMs;
+end;
+
 IsomorphismFilter := function(S1, S2)
   local M1, M2, sigma, G;
 
@@ -76,43 +85,68 @@ EquivalenceFilter := function(S1, S2)
   fi;
   return false;
 end;
+CanonicalTwist := function(M, autA)
+  local sigma, twistList;
+  twistList := [];
+  for sigma in autA do
+    Add(twistList, OnMultiplicationTable(M, sigma));
+  od;
+
+  Sort(twistList, function(a, b) return a < b; end);
+  return twistList[1];
+end;
 
 # Function to enumerate ai-semirings using double cosets
 Finder := function(allA, allM)
-  local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i, result, ok;
+  local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i, result, ok,
+  autMs, temp, canon, canonicalList;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
 
-  list := [];
-  i    := 0;
+  list  := [];
+  i     := 0;
+  autMs := PrecomputeAutM(allM);
+
   for A in allA do
     AA   := MultiplicationTable(A);
     autA := AutomorphismGroup(A);
     autA := Image(IsomorphismPermGroup(autA));
 
-    j := 0;
+    j             := 0;
+    temp          := [];
+    canonicalList := [];
 
     for M in allM do
       j    := j + 1;
-      PrintFormatted("At {}%, found {} so far\n",
+      PrintFormatted("At {}%, found {} so far\c\r",
                 Float((i * Length(allM) + j) * 100 /
                 (Length(allA) * Length(allM))),
-                Length(list));
-      autM := AutomorphismGroup(M);
-      autM := Image(IsomorphismPermGroup(autM));
+                Length(list) + Length(temp));
+      autM := autMs[j];
+      M    := MultiplicationTable(M);
+
+      canon := CanonicalTwist(M, autA);
+
+      if canon in canonicalList then
+        continue;
+      else
+        Add(canonicalList, canon);
+      fi;
 
       # Compute double coset reps: Aut(A)\S_n/Aut(M)
       reps := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)), autM, autA);
 
       for sigma in reps do
-        M_sigma := OnMultiplicationTable(MultiplicationTable(M), sigma[1]);
+        M_sigma := OnMultiplicationTable(M, sigma[1]);
         if IsLeftRightDistributive(AA, M_sigma) then
-          AddSet(list, [AA, M_sigma, autA]);
+          AddSet(temp, M_sigma);
         fi;
       od;
     od;
-    i := i + 1;
+    i    := i + 1;
+    temp := List(temp, x -> [AA, x, autA]);
+    UniteSet(list, temp);
   od;
     PrintFormatted("\nFound {} candidates!\n", Length(list));
 
