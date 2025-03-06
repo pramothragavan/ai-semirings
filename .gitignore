@@ -6,3 +6,5 @@
 annotate.g
 *.bbl
 *.blg
+*.log
+*.aux
