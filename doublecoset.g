@@ -103,7 +103,7 @@ end;
 # Function to enumerate ai-semirings using double cosets
 Finder := function(allA, allM)
   local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
-  autMs, temp, canon, canonicalList;
+  autMs, temp, canon, canonicalList, doubleCosetCache, value;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
@@ -117,9 +117,10 @@ Finder := function(allA, allM)
     autA := AutomorphismGroup(A);
     autA := Image(IsomorphismPermGroup(autA));
 
-    j             := 0;
-    temp          := [];
-    canonicalList := HashSet([]);
+    j                := 0;
+    temp             := [];
+    canonicalList    := HashSet([]);
+    doubleCosetCache := NewDictionary(Group((1, 2)), true, IsGroup);
 
     for M in allM do
       j    := j + 1;
@@ -130,11 +131,18 @@ Finder := function(allA, allM)
       autM := autMs[j];
       M    := MultiplicationTable(M);
 
-      # Compute double coset reps: Aut(A)\S_n/Aut(M)
-      reps  := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)), autM, autA);
+      value := LookupDictionary(doubleCosetCache, autM);
+      if value <> fail then
+        reps := value;
+      else
+        # Compute double coset reps: Aut(A)\S_n/Aut(M)
+        reps  := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)), autM, autA);
+        reps  := List(reps, x -> x[1]);
+        AddDictionary(doubleCosetCache, autM, reps);
+      fi;
 
       for sigma in reps do
-        M_sigma := OnMultiplicationTable(M, sigma[1]);
+        M_sigma := OnMultiplicationTable(M, sigma);
         if IsLeftRightDistributive(AA, M_sigma) then
           canon := CanonicalTwist(M_sigma, autA);
           if (canon in canonicalList) = false then
