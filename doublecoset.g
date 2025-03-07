@@ -91,7 +91,7 @@ end;
 # Function to enumerate ai-semirings using double cosets
 Finder := function(allA, allM)
   local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
-  autMs, temp, canon, canonicalList, doubleCosetCache, value, seen;
+  autMs, temp, canon, canonicalList, doubleCosetCache, value;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
@@ -104,7 +104,6 @@ Finder := function(allA, allM)
     AA   := MultiplicationTable(A);
     autA := AutomorphismGroup(A);
     autA := Image(IsomorphismPermGroup(autA));
-    # seen := HashSet([]);
 
     j                := 0;
     temp             := [];
@@ -132,10 +131,6 @@ Finder := function(allA, allM)
 
       for sigma in reps do
         M_sigma := OnMultiplicationTable(M, sigma);
-        # if M_sigma in seen then
-        #   continue;
-        # fi;
-        # AddSet(seen, M_sigma);
         if IsLeftRightDistributive(AA, M_sigma) then
           canon := CanonicalTwist(M_sigma, autA);
           if not (canon in canonicalList) then
@@ -177,3 +172,5 @@ AllRings := function(n)
   allM := UpToIsomorphism(allM);
   return Finder(allA, allM);
 end;
+
+Print(Length(AllAiSemirings(7)));
