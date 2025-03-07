@@ -3,45 +3,33 @@ LoadPackage("semigroups");
 LoadPackage("smallsemi");
 
 # A = the additive semigroup, M the multiplicative
-IsLeftRightDistributive := function(S, T)
-  local n, A, M, x, ok, y, z;
+IsLeftRightDistributive := function(A, M)
+  local n, x, y, z;
 
-  if Size(S) <> Size(T) then
+  if Size(A) <> Size(M) then
     return false;
   fi;
 
-  n  := Size(S);
-  if IsSemigroup(S) then
-    A  := MultiplicationTable(S);
-  else
-    A := S;
-  fi;
-  if IsSemigroup(T) then
-    M  := MultiplicationTable(T);
-  else
-    M := T;
-  fi;
-
+  n  := Size(A);
   x  := 0;
-  ok := true;
 
-  while x < n and ok do
+  while x < n do
     x := x + 1;
     y := 0;
-    while y < n and ok do
+    while y < n do
       y := y + 1;
-      z := 0;
-      while z < n and ok do
+      z := y;
+      while z < n do
         z := z + 1;
         if M[x, A[y, z]] <> A[M[x, y], M[x, z]] then
-          ok := false;
+          return false;
         elif M[A[y, z], x] <> A[M[y, x], M[z, x]] then
-          ok := false;
+          return false;
         fi;
       od;
     od;
   od;
-  return ok;
+  return true;
 end;
 
 PrecomputeAutM := function(allM)
@@ -103,7 +91,7 @@ end;
 # Function to enumerate ai-semirings using double cosets
 Finder := function(allA, allM)
   local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
-  autMs, temp, canon, canonicalList, doubleCosetCache, value;
+  autMs, temp, canon, canonicalList, doubleCosetCache, value, seen;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
@@ -116,6 +104,7 @@ Finder := function(allA, allM)
     AA   := MultiplicationTable(A);
     autA := AutomorphismGroup(A);
     autA := Image(IsomorphismPermGroup(autA));
+    # seen := HashSet([]);
 
     j                := 0;
     temp             := [];
@@ -143,9 +132,13 @@ Finder := function(allA, allM)
 
       for sigma in reps do
         M_sigma := OnMultiplicationTable(M, sigma);
+        # if M_sigma in seen then
+        #   continue;
+        # fi;
+        # AddSet(seen, M_sigma);
         if IsLeftRightDistributive(AA, M_sigma) then
           canon := CanonicalTwist(M_sigma, autA);
-          if (canon in canonicalList) = false then
+          if not (canon in canonicalList) then
             AddSet(canonicalList, canon);
             AddSet(temp, M_sigma);
           fi;
