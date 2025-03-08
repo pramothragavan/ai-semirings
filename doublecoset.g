@@ -38,6 +38,7 @@ PrecomputeAutM := function(allM)
   for M in allM do
     Add(autMs, Image(IsomorphismPermGroup(AutomorphismGroup(M))));
   od;
+  Print("AutMs done!\n");
   return autMs;
 end;
 
@@ -149,10 +150,15 @@ Finder := function(allA, allM)
 end;
 
 AllAiSemirings := function(n)
-  local allA, allM;
+  local allA, allM, anti;
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
+  Print("As done!\n");
   allM := AllSmallSemigroups(n);
-  allM := UpToIsomorphism(allM);
+  Print("Ms done!\n");
+  anti := List(allM, DualSemigroup);
+  allM := Concatenation(allM, anti);
+  allM := Unique(allM);
+  Print("Added in anti-iso!\n");
   return Finder(allA, allM);
 end;
 
@@ -172,5 +178,3 @@ AllRings := function(n)
   allM := UpToIsomorphism(allM);
   return Finder(allA, allM);
 end;
-
-Print(Length(AllAiSemirings(7)));
