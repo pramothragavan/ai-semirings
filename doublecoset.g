@@ -153,11 +153,12 @@ AllAiSemirings := function(n)
   local allA, allM, anti;
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
   Print("As done!\n");
-  allM := AllSmallSemigroups(n);
+  allM := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
   Print("Ms done!\n");
   anti := List(allM, DualSemigroup);
-  allM := Concatenation(allM, anti);
-  allM := Unique(allM);
+  anti := [];
+  allM := Concatenation(AllSmallSemigroups(n, IsSelfDualSemigroup, true),
+                        allM, anti);
   Print("Added in anti-iso!\n");
   return Finder(allA, allM);
 end;
@@ -178,5 +179,3 @@ AllRings := function(n)
   allM := UpToIsomorphism(allM);
   return Finder(allA, allM);
 end;
-
-Print(Length(AllAiSemirings(7)));
