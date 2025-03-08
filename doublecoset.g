@@ -156,7 +156,6 @@ AllAiSemirings := function(n)
   allM := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
   Print("Ms done!\n");
   anti := List(allM, DualSemigroup);
-  anti := [];
   allM := Concatenation(AllSmallSemigroups(n, IsSelfDualSemigroup, true),
                         allM, anti);
   Print("Added in anti-iso!\n");
