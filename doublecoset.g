@@ -178,3 +178,5 @@ AllRings := function(n)
   allM := UpToIsomorphism(allM);
   return Finder(allA, allM);
 end;
+
+Print(Length(AllAiSemirings(7)));
