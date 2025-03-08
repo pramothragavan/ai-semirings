@@ -32,16 +32,6 @@ IsLeftRightDistributive := function(A, M)
   return true;
 end;
 
-PrecomputeAutM := function(allM)
-  local autMs, M;
-  autMs := [];
-  for M in allM do
-    Add(autMs, Image(IsomorphismPermGroup(AutomorphismGroup(M))));
-  od;
-  Print("AutMs done!\n");
-  return autMs;
-end;
-
 IsomorphismFilter := function(S1, S2)
   local M1, M2, sigma, G;
 
@@ -99,7 +89,9 @@ Finder := function(allA, allM)
 
   list  := [];
   i     := 0;
-  autMs := PrecomputeAutM(allM);
+  Print("Computing automorphism groups...\n");
+  autMs := List(allM, Image(IsomorphismPermGroup(AutomorphismGroup)));
+  Print("AutMs done!\n");
 
   for A in allA do
     AA   := MultiplicationTable(A);
@@ -152,13 +144,15 @@ end;
 AllAiSemirings := function(n)
   local allA, allM, anti;
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
-  Print("As done!\n");
+  PrintFormatted("Found {} candidates for A!\n", Length(allA));
   allM := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
-  Print("Ms done!\n");
+  Print("Computing dual semigroups...\n");
   anti := List(allM, DualSemigroup);
+  Print("Adding in self-dual semigroups...\n");
   allM := Concatenation(AllSmallSemigroups(n, IsSelfDualSemigroup, true),
                         allM, anti);
-  Print("Added in anti-iso!\n");
+  PrintFormatted("Added in anti-iso! Found {} candidates for M!\n",
+                  Length(allM));
   return Finder(allA, allM);
 end;
 
