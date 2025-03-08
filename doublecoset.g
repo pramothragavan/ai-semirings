@@ -90,7 +90,7 @@ Finder := function(allA, allM)
   list  := [];
   i     := 0;
   Print("Computing automorphism groups...\n");
-  autMs := List(allM, Image(IsomorphismPermGroup(AutomorphismGroup)));
+  autMs := List(allM, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
   Print("AutMs done!\n");
 
   for A in allA do
