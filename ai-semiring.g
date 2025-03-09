@@ -1,49 +1,34 @@
-
-# Function checking whether a pair of semigroups defines an ai-semiring:
-
 LoadPackage("semigroups");
 LoadPackage("smallsemi");
 
 # A = the additive semigroup, M the multiplicative
-IsLeftRightDistributive := function(S, T)
-  local n, A, M, x, ok, y, z;
+IsLeftRightDistributive := function(A, M)
+  local n, x, y, z;
 
-  if Size(S) <> Size(T) then
+  if Size(A) <> Size(M) then
     return false;
   fi;
 
-  n  := Size(S);
-  if IsSemigroup(S) then
-    A  := MultiplicationTable(S);
-  else
-    A := S;
-  fi;
-  if IsSemigroup(T) then
-    M  := MultiplicationTable(T);
-  else
-    M := T;
-  fi;
-
+  n  := Size(A);
   x  := 0;
-  ok := true;
 
-  while x < n and ok do
+  while x < n do
     x := x + 1;
     y := 0;
-    while y < n and ok do
+    while y < n do
       y := y + 1;
-      z := 0;
-      while z < n and ok do
+      z := y;
+      while z < n do
         z := z + 1;
         if M[x, A[y, z]] <> A[M[x, y], M[x, z]] then
-          ok := false;
+          return false;
         elif M[A[y, z], x] <> A[M[y, x], M[z, x]] then
-          ok := false;
+          return false;
         fi;
       od;
     od;
   od;
-  return ok;
+  return true;
 end;
 
 IsomorphismFilter := function(S1, S2)
@@ -79,75 +64,107 @@ EquivalenceFilter := function(S1, S2)
   return false;
 end;
 
-Finder := function(allA, allM)
-  local list, G, R, AA, H, T, p, MM, result, ok, A, M, t, r, i, j;
+# reduce whole orbit to one representative
+CanonicalTwist := function(M, autA)
+  local sigma, min, temp;
+  min := M;
+  for sigma in autA do
+    temp := OnMultiplicationTable(M, sigma);
+    if temp < min then
+      min := temp;
+    fi;
+  od;
+
+  return min;
+end;
+
+# Function to enumerate ai-semirings using double cosets
+Finder := function(allA, allM, autMs, shift)
+  local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
+  temp, doubleCosetCache, value;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
 
   list  := [];
   i     := 0;
-  # Do a first pass that over counts
+
   for A in allA do
-    G  := Image(IsomorphismPermGroup(AutomorphismGroup(A)));
-    R  := RightTransversal(SymmetricGroup(Size(A)), G);
-    AA := MultiplicationTable(A);
-    Assert(0, IsSelfDualSemigroup(A));
-    j := 0;
+    AA   := MultiplicationTable(A);
+    autA := AutomorphismGroup(A);
+    autA := Image(IsomorphismPermGroup(autA));
+
+    j                := 0;
+    temp             := [];
+    doubleCosetCache := NewDictionary(Group((1, 2)), true, IsGroup);
+
     for M in allM do
-      j := j + 1;
+      j    := j + 1;
       PrintFormatted("At {}%, found {} so far\c\r",
-                     Float((i * Length(allM) + j) * 100 /
-                     (Length(allA) * Length(allM))),
-                     Length(list));
-      H := Intersection(G, Image(IsomorphismPermGroup(AutomorphismGroup(M))));
-      T := RightTransversal(G, H);
-      for t in T do
-        for r in R do
-          p  := t * r;
-          MM := OnMultiplicationTable(MultiplicationTable(M), p);
-          if IsLeftRightDistributive(AA, MM) then
-            AddSet(list, [AA, MM, G]);
-          fi;
-        od;
+                Float((i * Length(allM) + j) * 100 /
+                (Length(allA) * Length(allM))),
+                Length(list) + Length(temp));
+
+      if j <= Length(autMs) then
+        autM := autMs[j];
+      else
+        autM := autMs[j - shift];
+      fi;
+
+      M    := MultiplicationTable(M);
+
+      value := LookupDictionary(doubleCosetCache, autM);
+      if value <> fail then
+        reps := value;
+      else
+        # Compute double coset reps: Aut(A)\S_n/Aut(M)
+        reps  := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)), autM, autA);
+        reps  := List(reps, x -> x[1]);
+        AddDictionary(doubleCosetCache, autM, reps);
+      fi;
+
+      for sigma in reps do
+        M_sigma := OnMultiplicationTable(M, sigma);
+        if IsLeftRightDistributive(AA, M_sigma) then
+          AddSet(temp, M_sigma);
+        fi;
       od;
     od;
-    i := i + 1;
+    i    := i + 1;
+    temp := List(temp, x -> [AA, x]);
+    UniteSet(list, temp);
   od;
-  PrintFormatted("\nFound {} candidates!\n", Length(list));
-
-  result := [];
-
-  Print("Filtering up to isomorphism or equivalence!\n");
-  # Filter up to isomorphism
-  for i in [1 .. Length(list) - 1] do
-    PrintFormatted("At {} of {}\c\r", i, Length(list));
-    ok := true;
-    for j in [i + 1 .. Length(list)] do
-      if IsomorphismFilter(list[i], list[j]) then
-        ok := false;
-        break;
-        # TODO check equivalence
-      fi;
-    od;
-    if ok then
-      Add(result, list[i]);
-    fi;
-  od;
-
-  PrintFormatted("\n", i, Length(list) - 1);
-
-  Add(result, list[Length(list)]);
-
-  return result;
+    PrintFormatted("\nFound {} candidates!\n", Length(list));
+  return list;
 end;
 
 AllAiSemirings := function(n)
-  local allA, allM;
+  local allA, allM, NSD, anti, autMs, autM_NSD, SD, autM_SD;
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
-  allM := AllSmallSemigroups(n);
-  allM := UpToIsomorphism(allM);
-  return Finder(allA, allM);
+  PrintFormatted("Found {} candidates for A!\n", Length(allA));
+
+  Print("Finding non-self-dual semigroups...\n");
+  NSD      := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
+
+  Print("Finding corresponding dual semigroups...\n");
+  anti   := List(NSD, DualSemigroup);
+
+  Print("Finding automorphism groups...\n");
+  autM_NSD := List(NSD,
+                   x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
+
+  Print("Adding in self-dual semigroups...\n");
+  SD   := AllSmallSemigroups(n, IsSelfDualSemigroup, true);
+  allM := Concatenation(SD, NSD, anti);
+  PrintFormatted("Added in anti-iso! Found {} candidates for M!\n",
+                  Length(allM));
+
+  Print("Finding automorphism groups for self-dual semigroups...\n");
+  autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
+  autMs   := Concatenation(autM_SD, autM_NSD);
+
+  Print("Finding ai-semirings...\n");
+  return Finder(allA, allM, autMs, Length(NSD));
 end;
 
 AllRingsWithOne := function(n)
