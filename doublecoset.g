@@ -170,7 +170,7 @@ AllAiSemirings := function(n)
 
   Print("Finding automorphism groups for self-dual semigroups...\n");
   autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
-  autMs   := Concatenation(autM_SD, autM_NSD, autM_NSD);
+  autMs   := Concatenation(autM_SD, autM_NSD);
   return Finder(allA, allM, autMs, Length(NSD));
 end;
 
