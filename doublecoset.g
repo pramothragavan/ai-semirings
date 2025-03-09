@@ -82,16 +82,13 @@ end;
 # Function to enumerate ai-semirings using double cosets
 Finder := function(allA, allM, autMs, shift)
   local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
-  temp, canon, canonicalList, doubleCosetCache, value;
+  temp, doubleCosetCache, value;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
 
   list  := [];
   i     := 0;
-  # Print("Computing automorphism groups...\n");
-  # autMs := List(allM, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
-  # Print("AutMs done!\n");
 
   for A in allA do
     AA   := MultiplicationTable(A);
@@ -100,7 +97,6 @@ Finder := function(allA, allM, autMs, shift)
 
     j                := 0;
     temp             := [];
-    canonicalList    := HashSet([]);
     doubleCosetCache := NewDictionary(Group((1, 2)), true, IsGroup);
 
     for M in allM do
@@ -131,11 +127,7 @@ Finder := function(allA, allM, autMs, shift)
       for sigma in reps do
         M_sigma := OnMultiplicationTable(M, sigma);
         if IsLeftRightDistributive(AA, M_sigma) then
-          canon := CanonicalTwist(M_sigma, autA);
-          if not (canon in canonicalList) then
-            AddSet(canonicalList, canon);
-            AddSet(temp, M_sigma);
-          fi;
+          AddSet(temp, M_sigma);
         fi;
       od;
     od;
@@ -171,6 +163,8 @@ AllAiSemirings := function(n)
   Print("Finding automorphism groups for self-dual semigroups...\n");
   autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
   autMs   := Concatenation(autM_SD, autM_NSD);
+
+  Print("Finding ai-semirings...\n");
   return Finder(allA, allM, autMs, Length(NSD));
 end;
 
