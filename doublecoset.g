@@ -80,18 +80,18 @@ CanonicalTwist := function(M, autA)
 end;
 
 # Function to enumerate ai-semirings using double cosets
-Finder := function(allA, allM)
+Finder := function(allA, allM, autMs, shift)
   local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
-  autMs, temp, canon, canonicalList, doubleCosetCache, value;
+  temp, canon, canonicalList, doubleCosetCache, value;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
 
   list  := [];
   i     := 0;
-  Print("Computing automorphism groups...\n");
-  autMs := List(allM, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
-  Print("AutMs done!\n");
+  # Print("Computing automorphism groups...\n");
+  # autMs := List(allM, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
+  # Print("AutMs done!\n");
 
   for A in allA do
     AA   := MultiplicationTable(A);
@@ -109,7 +109,13 @@ Finder := function(allA, allM)
                 Float((i * Length(allM) + j) * 100 /
                 (Length(allA) * Length(allM))),
                 Length(list) + Length(temp));
-      autM := autMs[j];
+
+      if j <= Length(autMs) then
+        autM := autMs[j];
+      else
+        autM := autMs[j - shift];
+      fi;
+
       M    := MultiplicationTable(M);
 
       value := LookupDictionary(doubleCosetCache, autM);
@@ -134,7 +140,7 @@ Finder := function(allA, allM)
       od;
     od;
     i    := i + 1;
-    temp := List(temp, x -> [AA, x, autA]);
+    temp := List(temp, x -> [AA, x]);
     UniteSet(list, temp);
   od;
     PrintFormatted("\nFound {} candidates!\n", Length(list));
@@ -142,18 +148,30 @@ Finder := function(allA, allM)
 end;
 
 AllAiSemirings := function(n)
-  local allA, allM, anti;
+  local allA, allM, NSD, anti, autMs, autM_NSD, SD, autM_SD;
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
   PrintFormatted("Found {} candidates for A!\n", Length(allA));
-  allM := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
-  Print("Computing dual semigroups...\n");
-  anti := List(allM, DualSemigroup);
+
+  Print("Finding non-self-dual semigroups...\n");
+  NSD      := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
+
+  Print("Finding corresponding dual semigroups...\n");
+  anti   := List(NSD, DualSemigroup);
+
+  Print("Finding automorphism groups...\n");
+  autM_NSD := List(NSD,
+                   x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
+
   Print("Adding in self-dual semigroups...\n");
-  allM := Concatenation(AllSmallSemigroups(n, IsSelfDualSemigroup, true),
-                        allM, anti);
+  SD   := AllSmallSemigroups(n, IsSelfDualSemigroup, true);
+  allM := Concatenation(SD, NSD, anti);
   PrintFormatted("Added in anti-iso! Found {} candidates for M!\n",
                   Length(allM));
-  return Finder(allA, allM);
+
+  Print("Finding automorphism groups for self-dual semigroups...\n");
+  autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
+  autMs   := Concatenation(autM_SD, autM_NSD, autM_NSD);
+  return Finder(allA, allM, autMs, Length(NSD));
 end;
 
 AllRingsWithOne := function(n)
