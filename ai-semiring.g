@@ -109,7 +109,7 @@ Finder := function(allA, allM, autMs, map, shift)
                 (Length(allA) * Length(allM))),
                 count);
 
-      if j mod 1000 = 0 then
+      if j mod 100000 = 0 then
         PrintFormatted("\n\nSince last print, {}GB of memory allocated (i = {}, j = {})\n",
                     Float(TotalMemoryAllocated() / 10 ^ 9) - total, i, j);
         total := Float(TotalMemoryAllocated() / 10 ^ 9);
