@@ -139,7 +139,7 @@ Finder := function(allA, allM, autMs, map, shift)
     # UniteSet(list, temp);
   od;
     PrintFormatted("\nFound {} candidates!\n", count);
-  return list;
+  return count;
 end;
 
 AllAiSemirings := function(n)
