@@ -81,10 +81,13 @@ end;
 # Function to enumerate ai-semirings using double cosets
 Finder := function(allA, allM, autMs, map, shift)
   local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
-  temp, doubleCosetCache, value, count, gens;
+  temp, doubleCosetCache, value, count, gens, total;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
+
+  total := Float(TotalMemoryAllocated() / 10 ^ 9);
+  PrintFormatted("{}GB of memory allocated\n", total);
 
   # list  := [];
   i     := 0;
@@ -101,10 +104,19 @@ Finder := function(allA, allM, autMs, map, shift)
 
     for M in allM do
       j    := j + 1;
-      PrintFormatted("At {}%, found {} so far\c\r",
+      PrintFormatted("At {}%, found {} so far\r\c",
                 Float((i * Length(allM) + j) * 100 /
                 (Length(allA) * Length(allM))),
                 count);
+
+      if j mod 1000 = 0 then
+        PrintFormatted("\n\nSince last print, {}GB of memory allocated (i = {}, j = {})\n",
+                    Float(TotalMemoryAllocated() / 10 ^ 9) - total, i, j);
+        total := Float(TotalMemoryAllocated() / 10 ^ 9);
+        PrintFormatted("Usage breakdown:\nallA: {}GB\nallM: {}GB\nautMs: {}GB\ndoubleCosetCache: {}GB\n\n",
+                       Float(MemoryUsage(allA) / 10 ^ 9), Float(MemoryUsage(allM) / 10 ^ 9),
+                       Float(MemoryUsage(autMs) / 10 ^ 9), Float(MemoryUsage(doubleCosetCache) / 10 ^ 9));
+      fi;
 
       if j <= Length(allM) - shift then
         autM := autMs[map[j]];
@@ -145,6 +157,8 @@ end;
 AllAiSemirings := function(n)
   local allA, allM, NSD, anti, autMs, autM_NSD, SD, autM_SD,
   uniqueAutMs, map, shift;
+  PrintFormatted("{}GB of memory allocated\n",
+                Float(TotalMemoryAllocated() / 10 ^ 9));
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
   PrintFormatted("Found {} candidates for A!\n", Length(allA));
 
@@ -178,6 +192,7 @@ AllAiSemirings := function(n)
   Unbind(SD);
   Unbind(autM_SD);
   Unbind(autMs);
+  CollectGarbage(true);
 
   Print("Finding ai-semirings...\n");
   return Finder(allA, allM, uniqueAutMs, map, shift);
