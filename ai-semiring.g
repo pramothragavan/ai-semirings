@@ -79,15 +79,16 @@ CanonicalTwist := function(M, autA)
 end;
 
 # Function to enumerate ai-semirings using double cosets
-Finder := function(allA, allM, autMs, shift)
+Finder := function(allA, allM, autMs, map, shift)
   local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
-  temp, doubleCosetCache, value;
+  temp, doubleCosetCache, value, count, gens;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
 
-  list  := [];
+  # list  := [];
   i     := 0;
+  count := 0;
 
   for A in allA do
     AA   := MultiplicationTable(A);
@@ -95,56 +96,61 @@ Finder := function(allA, allM, autMs, shift)
     autA := Image(IsomorphismPermGroup(autA));
 
     j                := 0;
-    temp             := [];
-    doubleCosetCache := NewDictionary(Group((1, 2)), true, IsGroup);
+    # temp             := [];
+    doubleCosetCache := HashMap();
 
     for M in allM do
       j    := j + 1;
       PrintFormatted("At {}%, found {} so far\c\r",
                 Float((i * Length(allM) + j) * 100 /
                 (Length(allA) * Length(allM))),
-                Length(list) + Length(temp));
+                count);
 
-      if j <= Length(autMs) then
-        autM := autMs[j];
+      if j <= Length(allM) - shift then
+        autM := autMs[map[j]];
       else
-        autM := autMs[j - shift];
+        autM := autMs[map[j - shift]];
       fi;
 
       M    := MultiplicationTable(M);
+      gens := GeneratorsSmallest(autM);
 
-      value := LookupDictionary(doubleCosetCache, autM);
+      value := doubleCosetCache[gens];
       if value <> fail then
         reps := value;
       else
         # Compute double coset reps: Aut(A)\S_n/Aut(M)
-        reps  := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)), autM, autA);
-        reps  := List(reps, x -> x[1]);
-        AddDictionary(doubleCosetCache, autM, reps);
+        reps := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)),
+                                        autM, autA);
+        reps                   := List(reps, x -> x[1]);
+        doubleCosetCache[gens] := reps;
       fi;
 
       for sigma in reps do
         M_sigma := OnMultiplicationTable(M, sigma);
         if IsLeftRightDistributive(AA, M_sigma) then
-          AddSet(temp, M_sigma);
+          # AddSet(temp, M_sigma);
+          count := count + 1;
         fi;
       od;
     od;
     i    := i + 1;
-    temp := List(temp, x -> [AA, x]);
-    UniteSet(list, temp);
+    # temp := List(temp, x -> [AA, x]);
+    # UniteSet(list, temp);
   od;
-    PrintFormatted("\nFound {} candidates!\n", Length(list));
+    PrintFormatted("\nFound {} candidates!\n", count);
   return list;
 end;
 
 AllAiSemirings := function(n)
-  local allA, allM, NSD, anti, autMs, autM_NSD, SD, autM_SD;
+  local allA, allM, NSD, anti, autMs, autM_NSD, SD, autM_SD,
+  uniqueAutMs, map, shift;
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
   PrintFormatted("Found {} candidates for A!\n", Length(allA));
 
   Print("Finding non-self-dual semigroups...\n");
   NSD      := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
+  shift    := Length(NSD);
 
   Print("Finding corresponding dual semigroups...\n");
   anti   := List(NSD, DualSemigroup);
@@ -163,8 +169,18 @@ AllAiSemirings := function(n)
   autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
   autMs   := Concatenation(autM_SD, autM_NSD);
 
+  uniqueAutMs := Set(autMs);
+  map         := List(autMs, g -> Position(uniqueAutMs, g));
+
+  Unbind(NSD);
+  Unbind(anti);
+  Unbind(autM_NSD);
+  Unbind(SD);
+  Unbind(autM_SD);
+  Unbind(autMs);
+
   Print("Finding ai-semirings...\n");
-  return Finder(allA, allM, autMs, Length(NSD));
+  return Finder(allA, allM, uniqueAutMs, map, shift);
 end;
 
 AllRingsWithOne := function(n)
