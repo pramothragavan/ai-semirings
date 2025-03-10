@@ -9,3 +9,4 @@ annotate.g
 *.blg
 *.log
 *.aux
+*.py
