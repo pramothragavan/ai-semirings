@@ -78,80 +78,105 @@ CanonicalTwist := function(M, autA)
   return min;
 end;
 
+
 # Function to enumerate ai-semirings using double cosets
 Finder := function(allA, allM, autMs, shift)
   local A, AA, autA, list, M, autM, reps, sigma, M_sigma, j, i,
-  temp, doubleCosetCache, value;
+  temp, doubleCosetCache, value, count, gens, output, f;
   FLOAT.DIG         := 2;
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
+  output := "";
+  f := IO_CompressedFile("/home/azureuser/ai-semirings.log", "w");
+  InstallAtExit(function()  IO_WriteLine(f, output); IO_Close(f); end);
 
-  list  := [];
+
+  count := 0;
   i     := 0;
-
+  
   for A in allA do
     AA   := MultiplicationTable(A);
     autA := AutomorphismGroup(A);
     autA := Image(IsomorphismPermGroup(autA));
 
     j                := 0;
-    temp             := [];
     doubleCosetCache := NewDictionary(Group((1, 2)), true, IsGroup);
 
     for M in allM do
+      output := Concatenation(output, String(TotalMemoryAllocated()), " on line 101\n");
       j    := j + 1;
       PrintFormatted("At {}%, found {} so far\c\r",
                 Float((i * Length(allM) + j) * 100 /
                 (Length(allA) * Length(allM))),
-                Length(list) + Length(temp));
+                count);
+      M     := MultiplicationTable(M);
 
-      if j <= Length(autMs) then
-        autM := autMs[j];
-      else
-        autM := autMs[j - shift];
+      output := Concatenation(output, String(TotalMemoryAllocated()), " on line 109\n");
+
+      if Size(doubleCosetCache) > 100000 then
+        doubleCosetCache := NewDictionary(Group((1, 2)), true, IsGroup);
       fi;
 
-      M    := MultiplicationTable(M);
+      if j <= Length(autMs) then
+        gens  := autMs[j];
+      else
+        gens  := autMs[j - shift];
+      fi;
 
-      value := LookupDictionary(doubleCosetCache, autM);
+      output := Concatenation(output, String(TotalMemoryAllocated()), " on line 121\n");
+      autM  := GroupByGenerators(gens);
+      output := Concatenation(output, String(TotalMemoryAllocated()), " on line 123\n");
+      value := LookupDictionary(doubleCosetCache, gens);
+
       if value <> fail then
         reps := value;
       else
         # Compute double coset reps: Aut(A)\S_n/Aut(M)
+        output := Concatenation(output, String(TotalMemoryAllocated()), " on line 130\n");
         reps  := DoubleCosetRepsAndSizes(SymmetricGroup(Size(A)), autM, autA);
+        output := Concatenation(output, String(TotalMemoryAllocated()), "on line 132\n");
         reps  := List(reps, x -> x[1]);
-        AddDictionary(doubleCosetCache, autM, reps);
+        output := Concatenation(output, String(TotalMemoryAllocated()), " on line 134\n");
+        AddDictionary(doubleCosetCache, Generators(autM), reps);
       fi;
 
+      output := Concatenation(output, String(TotalMemoryAllocated()), " on line 143\n");
       for sigma in reps do
         M_sigma := OnMultiplicationTable(M, sigma);
         if IsLeftRightDistributive(AA, M_sigma) then
-          AddSet(temp, M_sigma);
+          count := count + 1;
         fi;
       od;
+      output := Concatenation(output, String(TotalMemoryAllocated()), " on line 150\n");
+
+      # if j is mod 1000, print the current count
+      if j mod 10000 = 0 then
+        IO_WriteLine(f, output);
+        output := "";
+      fi;
     od;
     i    := i + 1;
-    temp := List(temp, x -> [AA, x]);
-    UniteSet(list, temp);
   od;
-    PrintFormatted("\nFound {} candidates!\n", Length(list));
-  return list;
+      PrintFormatted("\nFound {} candidates!\n", count);
+
+  return count;
 end;
 
 AllAiSemirings := function(n)
-  local allA, allM, NSD, anti, autMs, autM_NSD, SD, autM_SD;
+  local allA, allM, NSD, anti, autMs, autM_NSD, SD, autM_SD, shift;
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
   PrintFormatted("Found {} candidates for A!\n", Length(allA));
 
   Print("Finding non-self-dual semigroups...\n");
   NSD      := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
+  shift    := Length(NSD);
 
   Print("Finding corresponding dual semigroups...\n");
   anti   := List(NSD, DualSemigroup);
 
   Print("Finding automorphism groups...\n");
   autM_NSD := List(NSD,
-                   x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
+                   x -> Generators(Image(IsomorphismPermGroup(AutomorphismGroup(x)))));
 
   Print("Adding in self-dual semigroups...\n");
   SD   := AllSmallSemigroups(n, IsSelfDualSemigroup, true);
@@ -160,11 +185,18 @@ AllAiSemirings := function(n)
                   Length(allM));
 
   Print("Finding automorphism groups for self-dual semigroups...\n");
-  autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
+  autM_SD := List(SD, x -> Generators(Image(IsomorphismPermGroup(AutomorphismGroup(x)))));
   autMs   := Concatenation(autM_SD, autM_NSD);
 
+  Unbind(NSD);
+  Unbind(anti);
+  Unbind(SD);
+  Unbind(autM_NSD);
+  Unbind(autM_SD);
+
+  Print(Length(Unique(autMs)), " automorphism groups found!\n");
   Print("Finding ai-semirings...\n");
-  return Finder(allA, allM, autMs, Length(NSD));
+  return Finder(allA, allM, autMs, shift);
 end;
 
 AllRingsWithOne := function(n)
