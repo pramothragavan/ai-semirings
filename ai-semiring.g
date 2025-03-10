@@ -183,7 +183,7 @@ AllAiSemirings := function(n)
   autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
   autMs   := Concatenation(autM_SD, autM_NSD);
 
-  uniqueAutMs := Set(autMs);
+  uniqueAutMs := Unique(autMs);
   map         := List(autMs, g -> Position(uniqueAutMs, g));
 
   Unbind(NSD);
