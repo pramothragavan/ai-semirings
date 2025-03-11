@@ -86,9 +86,6 @@ Finder := function(allA, allM, autMs, map, shift)
   FLOAT.VIEW_DIG    := 4;
   FLOAT.DECIMAL_DIG := 4;
 
-  total := Float(TotalMemoryAllocated() / 10 ^ 9);
-  PrintFormatted("{}GB of memory allocated\n", total);
-
   # list  := [];
   i     := 0;
   count := 0;
@@ -108,15 +105,6 @@ Finder := function(allA, allM, autMs, map, shift)
                 Float((i * Length(allM) + j) * 100 /
                 (Length(allA) * Length(allM))),
                 count);
-
-      if j mod 100000 = 0 then
-        PrintFormatted("\n\nSince last print, {}GB of memory allocated (i = {}, j = {})\n",
-                    Float(TotalMemoryAllocated() / 10 ^ 9) - total, i, j);
-        total := Float(TotalMemoryAllocated() / 10 ^ 9);
-        PrintFormatted("Usage breakdown:\nallA: {}GB\nallM: {}GB\nautMs: {}GB\ndoubleCosetCache: {}GB\n\n",
-                       Float(MemoryUsage(allA) / 10 ^ 9), Float(MemoryUsage(allM) / 10 ^ 9),
-                       Float(MemoryUsage(autMs) / 10 ^ 9), Float(MemoryUsage(doubleCosetCache) / 10 ^ 9));
-      fi;
 
       if j <= Length(allM) - shift then
         autM := autMs[map[j]];
@@ -155,41 +143,57 @@ Finder := function(allA, allM, autMs, map, shift)
 end;
 
 AllAiSemirings := function(n)
-  local allA, allM, NSD, anti, autMs, autM_NSD, SD, autM_SD,
-  uniqueAutMs, map, shift;
-  PrintFormatted("{}GB of memory allocated\n",
-                Float(TotalMemoryAllocated() / 10 ^ 9));
+  local allA, allM, NSD, autMs, autM_NSD, SD, autM_SD, uniqueAutMs, map, shift;
+
   allA := AllSmallSemigroups(n, IsBand, true, IsCommutative, true);
   PrintFormatted("Found {} candidates for A!\n", Length(allA));
 
-  Print("Finding non-self-dual semigroups...\n");
-  NSD      := AllSmallSemigroups(n, IsSelfDualSemigroup, false);
+  Print("Finding non-self-dual semigroups and their automorphism groups...\n");
+  NSD      := EnumeratorOfSmallSemigroups(n, IsSelfDualSemigroup, false);
   shift    := Length(NSD);
-
-  Print("Finding corresponding dual semigroups...\n");
-  anti   := List(NSD, DualSemigroup);
-
-  Print("Finding automorphism groups...\n");
   autM_NSD := List(NSD,
                    x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
 
-  Print("Adding in self-dual semigroups...\n");
-  SD   := AllSmallSemigroups(n, IsSelfDualSemigroup, true);
-  allM := Concatenation(SD, NSD, anti);
-  PrintFormatted("Added in anti-iso! Found {} candidates for M!\n",
+  Print("Adding in self-dual semigroups and their automorphism groups...\n");
+  SD      := EnumeratorOfSmallSemigroups(n, IsSelfDualSemigroup, true);
+  autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
+
+  allM := EnumeratorByFunctions(SmallSemigroupEnumeratorFamily,
+    rec(
+      ElementNumber := function(enum, pos)
+        if pos <= Length(SD) then
+          return SD[pos];
+        elif pos <= Length(SD) + Length(NSD) then
+          return NSD[pos - Length(SD)];
+        else
+          return DualSemigroup(NSD[pos - Length(SD) - Length(NSD)]);
+        fi;
+      end,
+
+      NumberElement := function(enum, elm)
+        if elm in SD then
+          return Position(SD, elm);
+        elif elm in NSD then
+          return Length(SD) + Position(NSD, elm);
+        elif DualSemigroup(elm) in NSD then
+          return Length(SD) + Length(NSD) + Position(NSD, DualSemigroup(elm));
+        fi;
+
+        return fail;
+      end,
+
+      Length := function(enum) return Length(SD) + 2 * Length(NSD);
+    end));
+
+  PrintFormatted("Found {} candidates for M!\n",
                   Length(allM));
 
-  Print("Finding automorphism groups for self-dual semigroups...\n");
-  autM_SD := List(SD, x -> Image(IsomorphismPermGroup(AutomorphismGroup(x))));
-  autMs   := Concatenation(autM_SD, autM_NSD);
-
+  Print("Storing only unique automorphism groups and unbinding variables...\n");
+  autMs       := Concatenation(autM_SD, autM_NSD);
   uniqueAutMs := Unique(autMs);
   map         := List(autMs, g -> Position(uniqueAutMs, g));
 
-  Unbind(NSD);
-  Unbind(anti);
   Unbind(autM_NSD);
-  Unbind(SD);
   Unbind(autM_SD);
   Unbind(autMs);
   CollectGarbage(true);
